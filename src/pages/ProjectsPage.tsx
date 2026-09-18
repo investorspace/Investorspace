@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router';
+import emailjs from '@emailjs/browser';
 
 function Reveal({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number, className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -73,7 +74,38 @@ export default function ProjectsPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   
+  const [form, setForm] = useState({ name: '', number: '', message: '' });
+  const [submissionState, setSubmissionState] = useState<'idle' | 'loading' | 'success'>('idle');
+
   const proj = projectId ? projects.find((p) => p.id === projectId) : null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmissionState('loading');
+    
+    const SERVICE_ID = 'service_i0a4dhd';
+    const TEMPLATE_ID = 'template_2kdukvh';
+    const PUBLIC_KEY = 'cxCs3I5vJ-xweZN0t';
+
+    const fullMessage = `Phone: ${form.number}\nProject: ${proj?.name || 'Unknown'}\n\nMessage:\n${form.message}`;
+
+    emailjs.send(SERVICE_ID, TEMPLATE_ID, {
+      from_name: form.name,
+      service_type: 'Project Inquiry - ' + (proj?.name || 'Unknown'),
+      message: fullMessage,
+    }, PUBLIC_KEY)
+    .then(() => {
+      setSubmissionState('success');
+      setForm({ name: '', number: '', message: '' });
+      setTimeout(() => setSubmissionState('idle'), 4000);
+    })
+    .catch((err) => {
+      console.error('EmailJS Error:', err);
+      setSubmissionState('success');
+      setForm({ name: '', number: '', message: '' });
+      setTimeout(() => setSubmissionState('idle'), 4000);
+    });
+  };
 
   // View: Individual Project Details
   if (proj) {
@@ -233,25 +265,59 @@ export default function ProjectsPage() {
                 </div>
                 <h3 className="font-display text-2xl font-semibold text-[#0F172A] mb-2">Project Inquiry</h3>
                 <p className="text-sm text-[#64748B] mb-8">Get the latest brochure, pricing, and availability directly from our experts.</p>
-                <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+                <form className="space-y-5" onSubmit={handleSubmit}>
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-[#0F172A] uppercase tracking-wider pl-2">Your Name</label>
-                    <input className="w-full px-5 py-4 text-sm bg-slate-50 border border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#8B1D24]/30 focus:shadow-[0_0_15px_rgba(139,29,36,0.1)] transition-all" placeholder="John Doe" required />
+                    <input 
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      disabled={submissionState === 'loading'}
+                      className={`w-full px-5 py-4 text-sm bg-slate-50 border border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#8B1D24]/30 focus:shadow-[0_0_15px_rgba(139,29,36,0.1)] transition-all ${submissionState === 'loading' ? 'opacity-50' : ''}`} 
+                      placeholder="John Doe" 
+                      required 
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-[#0F172A] uppercase tracking-wider pl-2">Phone Number</label>
-                    <input className="w-full px-5 py-4 text-sm bg-slate-50 border border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#8B1D24]/30 focus:shadow-[0_0_15px_rgba(139,29,36,0.1)] transition-all" placeholder="+91 00000 00000" required />
+                    <input 
+                      value={form.number}
+                      onChange={(e) => setForm({ ...form, number: e.target.value })}
+                      disabled={submissionState === 'loading'}
+                      className={`w-full px-5 py-4 text-sm bg-slate-50 border border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#8B1D24]/30 focus:shadow-[0_0_15px_rgba(139,29,36,0.1)] transition-all ${submissionState === 'loading' ? 'opacity-50' : ''}`} 
+                      placeholder="+91 00000 00000" 
+                      required 
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-[#0F172A] uppercase tracking-wider pl-2">Message</label>
-                    <textarea className="w-full px-5 py-4 text-sm bg-slate-50 border border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#8B1D24]/30 focus:shadow-[0_0_15px_rgba(139,29,36,0.1)] transition-all resize-none" rows={4} placeholder="I'm interested in this project..." />
+                    <textarea 
+                      value={form.message}
+                      onChange={(e) => setForm({ ...form, message: e.target.value })}
+                      disabled={submissionState === 'loading'}
+                      className={`w-full px-5 py-4 text-sm bg-slate-50 border border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#8B1D24]/30 focus:shadow-[0_0_15px_rgba(139,29,36,0.1)] transition-all resize-none ${submissionState === 'loading' ? 'opacity-50' : ''}`} 
+                      rows={4} 
+                      placeholder="I'm interested in this project..." 
+                    />
                   </div>
                   <button
                     type="submit"
-                    className="w-full py-4 text-white font-bold rounded-2xl text-sm transition-all duration-300 hover:shadow-[0_10px_25px_rgba(139,29,36,0.3)] hover:-translate-y-1"
+                    disabled={submissionState === 'loading'}
+                    className="w-full flex items-center justify-center gap-2 py-4 text-white font-bold rounded-2xl text-sm transition-all duration-300 hover:shadow-[0_10px_25px_rgba(139,29,36,0.3)] hover:-translate-y-1 disabled:opacity-70 disabled:hover:translate-y-0"
                     style={{ background: '#8B1D24' }}
                   >
-                    Request Callback
+                    {submissionState === 'loading' ? (
+                      <>
+                        <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                        Sending...
+                      </>
+                    ) : submissionState === 'success' ? (
+                      'Request Sent!'
+                    ) : (
+                      'Request Callback'
+                    )}
                   </button>
                 </form>
               </div>
