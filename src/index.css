@@ -30,6 +30,9 @@ body {
   color: #0F172A;
   background: #FFFFFF;
   -webkit-font-smoothing: antialiased;
+  /* Anti-copy: Disable text selection globally */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Hide scrollbar by default, show on hover/scroll */
